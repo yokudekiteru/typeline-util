@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  TYPELINEの挙動を変えるためのスクリプト
-// @author       You
+// @author       ogw.tttt@gmail.com
 // @include      https://dashboard.media.play.jp/*
 // @include      https://typeline-test.streaks.jp/*
 // @icon         https://www.google.com/s2/favicons?domain=play.jp
