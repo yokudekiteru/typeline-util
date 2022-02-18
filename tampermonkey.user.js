@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.1.1
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://dashboard.media.play.jp/*
@@ -20,7 +20,9 @@
 ・タイトル、サブタイトル、要約の入力欄を強調
 ・配信先確認を促すボタンの設置、配信先タブを強調（新規作成時と原稿から記事化した直後タイトル未定時に）
 ・記事作成ページから画像・動画のアップロードボタンを消し去る
-・アセット選択画面(画像・動画どちらも)で、行のどこかをダブルクリックすれば設定前確認画面（選んで「保存するボタン」を押したのと同じ状態）に
+・アセット選択画面(画像・動画どちらも)備考欄の表示領域を限定し、備考文字数が多くなっても表を見やすく
+・アセット選択画面での備考全体の確認のため、備考欄をCtrl+クリックで備考表示モーダルを表示、モーダルをCtrl+クリックで閉じる
+・アセット選択画面で、行のどこかをダブルクリックすれば設定前確認画面（選んで「保存するボタン」を押したのと同じ状態）に
 ・アセット設定前確認ポップアップでCtrl+Enter or 画面のどこかをダブルクリックで「設定する」をクリックと等価に(アセット設定）
 ・公開期限設定の便利ボタンを追加
 ・配信先の「すべてに配信」を除去
@@ -37,11 +39,59 @@
 ・Ctrl+Enter or 画面のどこかをダブルクリックで「記事化」ボタンのクリックと等価に（ポップアップを開く）
 ・記事化ポップアップにて Ctrl+Enter or 画面のどこかをダブルクリックで「記事化」をクリックと等価に（記事化の実行）
 
+[アセット一覧]
+・備考欄の表示領域を限定し、備考文字数が多くなっても表を見やすく
+・備考全体の確認のため、備考欄をCtrl+クリックで備考表示モーダルを表示、モーダルをCtrl+クリックで閉じる
+
 [アセットアップロード]
 ・動画ファイルをアップロードできないように
 */
 (function() {
   'use strict';
+
+  const userStyleEl = document.createElement('style');
+  userStyleEl.appendChild(document.createTextNode(`
+tr.tlutil-invalid {
+  background-color: gainsboro;
+}
+
+td.tlutil-note {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tlutil-show-modal td.tlutil-show-note {
+  background-color: pink !important;
+}
+
+#tlutil-show-note-modal {
+  position : absolute;
+  z-index: 99999;
+  background-color: red;
+  display: none;
+}
+
+#tlutil-show-note-modal-header {
+  position : relative;
+  display: inline-block;
+  text-align: center;
+  vertical-align: middle;
+  width: 100%;
+  background-color: #f8fafc;
+}
+
+#tlutil-show-note-modal-body {
+  position : relative;
+  background-color: #feeeed;
+  border: 5px inset pink;
+  padding: 10px;
+  height: 100%;
+  overflow:auto;
+}
+`));
+  document.getElementsByTagName('head')[0].appendChild(userStyleEl);
 
   function clickManuscriptToArticle() {
     // 原稿詳細で「記事化」ボタンをクリック
@@ -111,6 +161,7 @@
   }
 
   function selectAssetByClickTr(ev) {
+    if (ev.ctrlKey) return;
     let myTr = getParentTr(ev.target);
     if (myTr !== null) {
       myTr.querySelector('input[type="radio"],input[type="checkbox"]').click();
@@ -126,6 +177,89 @@
         break;
       }
     }
+  }
+
+  const showNoteModalId = 'tlutil-show-note-modal';
+
+  function createNoteModal() {
+    let modal = document.getElementById(showNoteModalId);
+    if (modal === null) {
+      modal = document.createElement('div');
+      modal.id = showNoteModalId;
+      let modalHeader = document.createElement('div');
+      modalHeader.id = showNoteModalId + '-header';
+      modalHeader.innerText = '備考詳細';
+      modal.appendChild(modalHeader);
+      let modalBody = document.createElement('div');
+      modalBody.id = showNoteModalId + '-body';
+      modal.appendChild(modalBody);
+      modal.addEventListener('click', hideNoteModal);
+      document.body.appendChild(modal);
+    }
+    return modal;
+  }
+
+  function getNoteTd(ev) {
+    let parentTr = getParentTr(ev.target);
+    return parentTr.children.item(6);
+  }
+
+  function refreshNoteModal(ev) {
+    let targetEl = getNoteTd(ev);
+    const modal = createNoteModal();
+    let leftTargetEl = document.querySelector('.pmpui-table-header-copy th.column-type');
+    let leftTargetElRect = leftTargetEl === null ? { top: 0 } : leftTargetEl.getBoundingClientRect();
+    if (leftTargetElRect.top === 0) {
+      leftTargetEl = document.querySelector('.pmpui-table-container th.column-type');
+      leftTargetElRect = leftTargetEl.getBoundingClientRect();
+    }
+    let rightTargetEl = document.querySelector('.pmpui-table-container th.column-mime_type');
+    let rightTargetElRect = rightTargetEl.getBoundingClientRect();
+    let myTop = leftTargetElRect.top;
+    const myTopMin = 0;
+    if (myTop < myTopMin) {
+      myTop = myTopMin;
+    }
+    modal.style.top = myTop + 'px';
+    modal.style.left = (1 + leftTargetElRect.left) + 'px';
+    modal.style.width = (rightTargetElRect.right - leftTargetElRect.left - 1) + 'px';
+    modal.style.height = (window.innerHeight - myTop - 40) + 'px';
+    modal.children.item(0).style.lineHeight = leftTargetEl.offsetHeight + 'px';
+    modal.children.item(1).innerText = targetEl.innerText;
+    targetEl.classList.add('tlutil-show-note');
+    return modal;
+  }
+
+  function mouseoutNoteModal(ev) {
+    let targetEl = getNoteTd(ev);
+    targetEl.classList.remove('tlutil-show-note');
+  }
+
+  function showNoteModal(ev) {
+    if (!ev.ctrlKey) return;
+    const modal = refreshNoteModal(ev);
+    modal.style.display = 'block';
+    document.querySelector('.pmpui-table-container').classList.add('tlutil-show-modal');
+  }
+
+  function hideNoteModal(ev) {
+    if (!ev.ctrlKey) return;
+    createNoteModal().style.display = 'none';
+    document.querySelector('.pmpui-table-container').classList.remove('tlutil-show-modal');
+  }
+
+  function adjustAssetListView() {
+    // VACS導入後の備考文字数増加に備える
+    document.querySelectorAll('tr.pmpui-table-row').forEach(function(el) {
+      let noteEl = el.children.item(6);
+      if (noteEl.adjusted !== true) {
+        noteEl.classList.add('tlutil-note');
+        el.addEventListener('mouseover', refreshNoteModal);
+        el.addEventListener('mouseout', mouseoutNoteModal);
+        noteEl.addEventListener('click', showNoteModal);
+        noteEl.adjusted = true;
+      }
+    });
   }
 
   window.addEventListener('keydown', function(ev) {
@@ -258,10 +392,6 @@
             alertBtn.style.backgroundColor = 'gold';
             alertBtn.addEventListener('click', function(ev) {
               sidebarLi[i].querySelector('button').click();
-              /*
-              sidebarLi[i].style.backgroundColor = 'inherit';
-              alertBtn.remove();
-              */
             });
             document.querySelector('.pmpui-form__actions .pmpui-util-action-stripe-group').appendChild(alertBtn);
             sidebarLi[i].alertInjected = true;
@@ -273,23 +403,27 @@
       // 初期値設定
       let priority = document.querySelector('input[name="custom_data.priority"]');
       if (priority && priority.value === '') { priority.value = 'B'; }
+
+      // アセット一覧モーダルを見やすく
+      adjustAssetListView();
+
     } else if (location.href.indexOf('/typeline/assets') > -1) {
       // アセット一覧
-      /* 登録を封じる→無効化
-      document.querySelectorAll('a[href$=new]').forEach(function(el) {
-        el.remove();
-      });
-      */
-      // 画像のみに限定
-      document.querySelector('input[type="file"]').accept = 'image/jpeg,image/png';
+      // アセット一覧を見やすく
+      adjustAssetListView();
+      // アップロードを画像のみに限定
+      const imageUploadEl = document.querySelector('input[type="file"]');
+      if (imageUploadEl !== null) {
+        imageUploadEl.accept = 'image/jpeg,image/png';
+      }
     } else if (location.href.indexOf('/typeline/manuscripts') > -1) {
       // 原稿一覧
       /* 使用不可行の色を変更 */
       document.querySelectorAll('tr.pmpui-table-row').forEach(function(el) {
         if (el.children.item(3).textContent === '不可') {
-          el.style.backgroundColor = 'gainsboro';
+          el.classList.add('tlutil-invalid');
         } else {
-          el.style.backgroundColor = 'inherit';
+          el.classList.remove('tlutil-invalid');
         }
       });
     }
