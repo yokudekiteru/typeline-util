@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.1
+// @version      0.1.2
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
+// @include      https://preview.n*v.co.jp/*
 // @include      https://dashboard.media.play.jp/*
 // @include      https://typeline-test.streaks.jp/*
 // @icon         https://www.google.com/s2/favicons?domain=play.jp
@@ -11,6 +12,8 @@
 // ==/UserScript==
 /**
 【機能一覧】
+非本番環境（TYPELINEステージング環境、プレビューサイト）で外観を変更
+
 [記事一覧]
 ・行のどこかをクリックすればチェックが入るように
 ・チェックを入れたアイテムをCtrl+Enterで一気に開く（※要ポップアップブロック解除）
@@ -48,6 +51,28 @@
 */
 (function() {
   'use strict';
+
+  // プレビューサイトでは外観変更のみ
+  if (location.host.indexOf('preview') === 0) {
+    const previewStyleEl = document.createElement('style');
+    previewStyleEl.appendChild(document.createTextNode(`
+header .header-contents {
+  background-color: tan;
+}
+
+header .header-contents .header-block {
+  text-align: center;
+}
+
+header .header-contents .header-block [title] a:after {
+  content: 'プレビュー';
+  color: white;
+  font-size: 0.9em;
+}
+`));
+    document.getElementsByTagName('head')[0].appendChild(previewStyleEl);
+    return;
+  }
 
   const userStyleEl = document.createElement('style');
   userStyleEl.appendChild(document.createTextNode(`
@@ -92,6 +117,16 @@ td.tlutil-note {
 }
 `));
   document.getElementsByTagName('head')[0].appendChild(userStyleEl);
+
+  if (location.host !== 'dashboard.media.play.jp') {
+    const testStyleEl = document.createElement('style');
+    testStyleEl.appendChild(document.createTextNode(`
+header.pmpui-top_nav {
+  background-color: darkviolet;
+}
+`));
+    document.getElementsByTagName('head')[0].appendChild(testStyleEl);
+  }
 
   function clickManuscriptToArticle() {
     // 原稿詳細で「記事化」ボタンをクリック
@@ -211,6 +246,7 @@ td.tlutil-note {
     let leftTargetElRect = leftTargetEl === null ? { top: 0 } : leftTargetEl.getBoundingClientRect();
     if (leftTargetElRect.top === 0) {
       leftTargetEl = document.querySelector('.pmpui-table-container th.column-type');
+      if (leftTargetEl === null) return;
       leftTargetElRect = leftTargetEl.getBoundingClientRect();
     }
     let rightTargetEl = document.querySelector('.pmpui-table-container th.column-mime_type');
@@ -245,7 +281,11 @@ td.tlutil-note {
   function hideNoteModal(ev) {
     if (!ev.ctrlKey) return;
     createNoteModal().style.display = 'none';
-    document.querySelector('.pmpui-table-container').classList.remove('tlutil-show-modal');
+    const tableContainer = document.querySelector('.pmpui-table-container');
+    if (tableContainer !== null) {
+      // リスト表示がmodalの場合、domからcontainerが消えたあとにnoteModalを消すパターンがあるため
+      tableContainer.classList.add('tlutil-show-modal');
+    }
   }
 
   function adjustAssetListView() {
