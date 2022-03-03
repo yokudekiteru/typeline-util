@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.2
+// @version      0.1.3
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -12,7 +12,8 @@
 // ==/UserScript==
 /**
 【機能一覧】
-非本番環境（TYPELINEステージング環境、プレビューサイト）で外観を変更
+・非本番環境（TYPELINEステージング環境、プレビューサイト）で外観を変更
+・横スクロールが必要な表が表示された状態で、Ctrl + (← or →) で端まで移動
 
 [記事一覧]
 ・行のどこかをクリックすればチェックが入るように
@@ -308,6 +309,11 @@ header.pmpui-top_nav {
       if (clickEditArticle()) return;
       if (clickSetArticleAsset()) return;
       openListItems();
+    } else if (ev.ctrlKey && (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft')) {
+      let tableContainer = document.querySelector('.pmpui-table-container');
+      if (tableContainer !== null) {
+        tableContainer.scrollLeft = ev.key === 'ArrowLeft' ? 0 : 99999;
+      }
     }
   });
 
