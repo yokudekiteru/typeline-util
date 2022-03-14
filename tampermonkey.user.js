@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.4
+// @version      0.1.5
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -23,7 +23,7 @@
 ・スポーツ
 ▼原稿
 ・報道原稿
-・報道原稿(ニュース編集除く)
+・報道原稿(ﾆｭｰｽ編集除く)
 ・災害･L字原稿
 
 [記事一覧]
@@ -46,7 +46,7 @@
 ・記事詳細でCtrl+Enter or 画面のどこかをダブルクリックで「記事データの編集」をクリックと等価に（編集画面を開く）
 
 [原稿一覧]
-・「使用不可」行をグレーアウト
+・「原稿タイトルが"NC:"ではじまる」or「使用不可」行をグレーアウト
 ・行のどこかをクリックすればチェックが入るように
 ・チェックを入れたアイテムをCtrl+Enterで一気に開く（※要ポップアップブロック解除）
 
@@ -334,74 +334,100 @@ header.pmpui-top_nav {
     if (clickSetArticleAsset()) return;
   });
 
+  let articleCustomMenuList = [];
+  let manuscriptCustomMenuList = [];
+
   var observer = new MutationObserver(function() {
+
     const picNavigationLink = document.querySelector('.pmpui-side-navigation__list a[href*=person_in_charge]');
-    if (picNavigationLink !== null && picNavigationLink.customMenuAppended === undefined) {
-      picNavigationLink.customMenuAppended = true;
+    if (picNavigationLink !== null && articleCustomMenuList.length === 0) {
       const picUrl = picNavigationLink.href;
       const createdByMeUrl = picUrl.replace('person_in_charge', 'created_by');
-      const createdByMeMenuEl = document.createElement('li');
-      const picMenuEl = picNavigationLink.parentElement.parentElement;
-      const firstMenuEl = picMenuEl.parentElement;
-      let currentNextSibling = picMenuEl.nextSibling;
-      firstMenuEl.insertBefore(createdByMeMenuEl, currentNextSibling);
-      createdByMeMenuEl.innerHTML = '<span><a class="custom-menu pmpui-side-navigation__link" href="' + createdByMeUrl + '"><span>自分が作成者の記事#</span></a></span>';
-      currentNextSibling = createdByMeMenuEl.nextSibling;
-
       const baseSearchUrl = picUrl.split('?').shift();
-
-      // カル・スポ以外
-      const exceptCulSpoUrl = baseSearchUrl + '?filter=%7B%22article_type%22%3A%22ntv_article_news%22%2C%22tags.272c1139a6ec4c198e0349e830b2e999%22%3A%22%E5%9B%BD%E9%9A%9B%2C%E7%B5%8C%E6%B8%88%2C%E3%83%A9%E3%82%A4%E3%83%95%2C%E6%94%BF%E6%B2%BB%2C%E7%A4%BE%E4%BC%9A%22%7D';
-      const exceptCulSpoMenuEl = document.createElement('li');
-      firstMenuEl.insertBefore(exceptCulSpoMenuEl, currentNextSibling);
-      exceptCulSpoMenuEl.innerHTML = '<span><a class="custom-menu pmpui-side-navigation__link" href="' + exceptCulSpoUrl + '"><span>カル・スポ除く#</span></a></span>';
-      currentNextSibling = exceptCulSpoMenuEl.nextSibling;
-
-      // カルチャー
-      const culUrl = baseSearchUrl + '?filter=%7B%22article_type%22%3A%22ntv_article_news%22%2C%22tags.272c1139a6ec4c198e0349e830b2e999%22%3A%22%E3%82%AB%E3%83%AB%E3%83%81%E3%83%A3%E3%83%BC%22%7D';
-      const culMenuEl = document.createElement('li');
-      firstMenuEl.insertBefore(culMenuEl, currentNextSibling);
-      culMenuEl.innerHTML = '<span><a class="custom-menu pmpui-side-navigation__link" href="' + culUrl + '"><span>カルチャー#</span></a></span>';
-      currentNextSibling = culMenuEl.nextSibling;
-
-      // スポーツ
-      const spoUrl = baseSearchUrl + '?filter=%7B%22article_type%22%3A%22ntv_article_news%22%2C%22tags.272c1139a6ec4c198e0349e830b2e999%22%3A%22%E3%82%B9%E3%83%9D%E3%83%BC%E3%83%84%22%7D';
-      const spoMenuEl = document.createElement('li');
-      firstMenuEl.insertBefore(spoMenuEl, currentNextSibling);
-      spoMenuEl.innerHTML = '<span><a class="custom-menu pmpui-side-navigation__link" href="' + spoUrl + '"><span>スポーツ#</span></a></span>';
-      currentNextSibling = spoMenuEl.nextSibling;
-
-      // 報道原稿
-      const manuscriptNavigationLink = document.querySelector('.pmpui-side-navigation__list a[href*=manuscripts]');
-      const newsroomManuscriptUrl = manuscriptNavigationLink.href.split('?').shift() + '?filter=%7B%22category%22%3A%22DV00000001_FE00000003%2CDV00000001_FE00000002%2CDV00000001_FE00000004%2CDV00000001_FE00000005%2CDV00000001_FE20000010%2CDV00000001_FE00000007%2CDV00000001_FE20000007%2CDV00000001_FE00000011%2CDV00000001_FE00000006%22%7D';
-      const manuscriptMenuEl = manuscriptNavigationLink.parentElement.parentElement;
-      const assetMenuEl = manuscriptMenuEl.parentElement;
-      const newsroomManuscriptMenuEl = manuscriptMenuEl.cloneNode(true);
-      const newsroomManuscriptNavigationLink = newsroomManuscriptMenuEl.querySelector('a');
-      newsroomManuscriptNavigationLink.href = newsroomManuscriptUrl;
-      newsroomManuscriptNavigationLink.classList.add('custom-menu');
-      newsroomManuscriptNavigationLink.querySelector('span').innerText = '報道原稿#';
-      assetMenuEl.insertBefore(newsroomManuscriptMenuEl, manuscriptMenuEl.nextSibling);
-
-      // 報道原稿(ニュース編集除く)
-      const newsroomManuscriptUrl2 = manuscriptNavigationLink.href.split('?').shift() + '?filter=%7B%22category%22%3A%22DV00000001_FE00000003%2CDV00000001_FE00000002%2CDV00000001_FE00000004%2CDV00000001_FE00000005%2CDV00000001_FE20000010%2CDV00000001_FE00000007%2CDV00000001_FE20000007%2CDV00000001_FE00000011%22%7D';
-      const newsroomManuscriptMenuEl2 = manuscriptMenuEl.cloneNode(true);
-      const newsroomManuscriptNavigationLink2 = newsroomManuscriptMenuEl2.querySelector('a');
-      newsroomManuscriptNavigationLink2.href = newsroomManuscriptUrl2;
-      newsroomManuscriptNavigationLink2.classList.add('custom-menu');
-      newsroomManuscriptNavigationLink2.querySelector('span').innerText = '報道原稿(ニュース編集除く)#';
-      newsroomManuscriptNavigationLink2.style.fontSize = '0.8em';
-      assetMenuEl.insertBefore(newsroomManuscriptMenuEl2, newsroomManuscriptMenuEl.nextSibling);
-
-      // 災害･L字原稿
-      const disasterManuscriptUrl = manuscriptNavigationLink.href.split('?').shift() + '?filter=%7B%22category%22%3A%22DV00000001_FE00000002%2CDV00000001_FE00000003%2CDV00000001_FE00000004%22%2C%22type%22%3A%223%22%7D';
-      const disasterManuscriptMenuEl = manuscriptMenuEl.cloneNode(true);
-      const disasterManuscriptNavigationLink = disasterManuscriptMenuEl.querySelector('a');
-      disasterManuscriptNavigationLink.href = disasterManuscriptUrl;
-      disasterManuscriptNavigationLink.classList.add('custom-menu');
-      disasterManuscriptNavigationLink.querySelector('span').innerText = '災害･L字原稿#';
-      assetMenuEl.insertBefore(disasterManuscriptMenuEl, newsroomManuscriptMenuEl2.nextSibling);
+      const prototypeMenuEl = picNavigationLink.parentElement.parentElement.cloneNode(true);
+      [
+        {
+          name: '自分が作成者の記事',
+          url: createdByMeUrl,
+          style: [],
+        },
+        {
+          name: 'カル･スポ以外',
+          url: baseSearchUrl + '?filter=%7B%22article_type%22%3A%22ntv_article_news%22%2C%22tags.272c1139a6ec4c198e0349e830b2e999%22%3A%22%E5%9B%BD%E9%9A%9B%2C%E7%B5%8C%E6%B8%88%2C%E3%83%A9%E3%82%A4%E3%83%95%2C%E6%94%BF%E6%B2%BB%2C%E7%A4%BE%E4%BC%9A%22%7D',
+          style: [],
+        },
+        {
+          name: 'カルチャー',
+          url: baseSearchUrl + '?filter=%7B%22article_type%22%3A%22ntv_article_news%22%2C%22tags.272c1139a6ec4c198e0349e830b2e999%22%3A%22%E3%82%AB%E3%83%AB%E3%83%81%E3%83%A3%E3%83%BC%22%7D',
+          style: [],
+        },
+        {
+          name: 'スポーツ',
+          url: baseSearchUrl + '?filter=%7B%22article_type%22%3A%22ntv_article_news%22%2C%22tags.272c1139a6ec4c198e0349e830b2e999%22%3A%22%E3%82%B9%E3%83%9D%E3%83%BC%E3%83%84%22%7D',
+          style: [],
+        },
+      ].forEach(function(x) {
+        const myEl = prototypeMenuEl.cloneNode(true);
+        const myLinkEl = myEl.querySelector('a');
+        myLinkEl.href = x.url;
+        myLinkEl.classList.add('custom-menu');
+        myLinkEl.classList.add('custom-menu-article');
+        myLinkEl.innerText = x.name + '#';
+        x.style.forEach(function(y) {
+          myLinkEl.style[y.key] = y.value;
+        });
+        articleCustomMenuList.push(myEl);
+      });
     }
+
+    const manuscriptNavigationLink = document.querySelector('.pmpui-side-navigation__list a[href$=manuscripts]');
+    if (manuscriptNavigationLink !== null && manuscriptCustomMenuList.length === 0) {
+      const baseSearchUrl = manuscriptNavigationLink.href.split('?').shift();
+      const prototypeMenuEl = manuscriptNavigationLink.parentElement.parentElement.cloneNode(true);
+      [
+        {
+          name: '報道原稿',
+          url: baseSearchUrl + '?filter=%7B%22category%22%3A%22DV00000001_FE00000003%2CDV00000001_FE00000002%2CDV00000001_FE00000004%2CDV00000001_FE00000005%2CDV00000001_FE20000010%2CDV00000001_FE00000007%2CDV00000001_FE20000007%2CDV00000001_FE00000011%2CDV00000001_FE00000006%22%7D',
+          style: [],
+        },
+        {
+          name: '報道原稿(ﾆｭｰｽ編集除く)',
+          url: baseSearchUrl + '?filter=%7B%22category%22%3A%22DV00000001_FE00000003%2CDV00000001_FE00000002%2CDV00000001_FE00000004%2CDV00000001_FE00000005%2CDV00000001_FE20000010%2CDV00000001_FE00000007%2CDV00000001_FE20000007%2CDV00000001_FE00000011%22%7D',
+          style: [{key: 'fontSize', value: '0.9em'}],
+        },
+        {
+          name: '災害･L字原稿',
+          url: baseSearchUrl + '?filter=%7B%22category%22%3A%22DV00000001_FE00000002%2CDV00000001_FE00000003%2CDV00000001_FE00000004%22%2C%22type%22%3A%223%22%7D',
+          style: [],
+        },
+      ].forEach(function(x) {
+        const myEl = prototypeMenuEl.cloneNode(true);
+        const myLinkEl = myEl.querySelector('a');
+        myLinkEl.href = x.url;
+        myLinkEl.classList.add('custom-menu');
+        myLinkEl.classList.add('custom-menu-manuscript');
+        myLinkEl.querySelector('span').innerText = x.name + '#';
+        x.style.forEach(function(y) {
+          myLinkEl.style[y.key] = y.value;
+        });
+        manuscriptCustomMenuList.push(myEl);
+      });
+    }
+
+    if (picNavigationLink !== null && document.querySelectorAll('.custom-menu-article').length === 0) {
+      const targetEl = picNavigationLink.parentElement.parentElement.parentElement;
+      if (targetEl.innerHTML.indexOf('メニューに戻る') === -1) { // 記事種別サブメニューに入ったときはスルー
+        articleCustomMenuList.forEach(function(el) { targetEl.appendChild(el); });
+      }
+    }
+
+    if (manuscriptNavigationLink !== null && document.querySelectorAll('.custom-menu-manuscript').length === 0) {
+      const targetEl = manuscriptNavigationLink.parentElement.parentElement.parentElement;
+      manuscriptCustomMenuList.forEach(function(el) { targetEl.appendChild(el); });
+    }
+
+    // 素材管理メニューを閉じる動作に対応(#メニューの並び順が変わってしまう既知の不具合あり)
+    document.querySelectorAll('.custom-menu-manuscript').forEach(function(el) { el.style.display = manuscriptNavigationLink === null ? 'none' : 'inherit'; });
 
     // カスタムメニューの active 制御
     document.querySelectorAll('.custom-menu').forEach(function(el) {
@@ -418,7 +444,7 @@ header.pmpui-top_nav {
     // 記事詳細のアセット選択で行クリックでラジオOn
     // ダブルクリックでラジオOn→保存まで
     document.querySelectorAll('.master-table-asset tr').forEach(function(el) {
-      if (el.injectEvent === undefined) {
+      if (el.injectEvent !== true) {
         el.addEventListener('click', selectAssetByClickTr);
         el.addEventListener('dblclick', selectAssetByDblclickTr);
         el.injectEvent = true;
@@ -448,7 +474,7 @@ header.pmpui-top_nav {
 
       // 入力補助コントロール
       document.querySelectorAll('.publish-period-form').forEach(function(el) {
-        if (el.injectButton === undefined) {
+        if (el.injectButton !== true) {
           el.injectButton = true;
           ['１週間', '１ヵ月', '１年', '年末'].forEach(function(x) {
             const btn = document.createElement('button');
@@ -490,14 +516,14 @@ header.pmpui-top_nav {
       });
 
       document.querySelectorAll('.pmpui-radio-button').forEach(function(el) {
-        if (el.textContent.indexOf('すべてに配信') > -1 && el.forceHidden === undefined) {
+        if (el.textContent.indexOf('すべてに配信') > -1 && el.forceHidden !== true) {
           el.forceHidden = true;
           el.style = 'visibility: hidden;';
         }
       });
 
       document.querySelectorAll('.pmpui-radio-button').forEach(function(el) {
-        if (el.textContent.indexOf('個別に配信') > -1 && el.forceClicked === undefined) {
+        if (el.textContent.indexOf('個別に配信') > -1 && el.forceClicked !== true) {
           el.forceClicked = true;
           el.querySelector('input').click();
         }
@@ -554,7 +580,7 @@ header.pmpui-top_nav {
       // 原稿一覧
       /* 使用不可行の色を変更 */
       document.querySelectorAll('tr.pmpui-table-row').forEach(function(el) {
-        if (el.children.item(3).textContent === '不可') {
+        if (el.children.item(1).textContent.indexOf('NC:') === 0 || el.children.item(3).textContent === '不可') {
           el.classList.add('tlutil-invalid');
         } else {
           el.classList.remove('tlutil-invalid');
