@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.3
+// @version      0.1.4
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -14,6 +14,17 @@
 【機能一覧】
 ・非本番環境（TYPELINEステージング環境、プレビューサイト）で外観を変更
 ・横スクロールが必要な表が表示された状態で、Ctrl + (← or →) で端まで移動
+
+[カスタムメニュー]
+▼記事
+・自分が作成者の記事
+・カル・スポ除く
+・カルチャー
+・スポーツ
+▼原稿
+・報道原稿
+・報道原稿(ニュース編集除く)
+・災害･L字原稿
 
 [記事一覧]
 ・行のどこかをクリックすればチェックが入るように
@@ -324,6 +335,83 @@ header.pmpui-top_nav {
   });
 
   var observer = new MutationObserver(function() {
+    const picNavigationLink = document.querySelector('.pmpui-side-navigation__list a[href*=person_in_charge]');
+    if (picNavigationLink !== null && picNavigationLink.customMenuAppended === undefined) {
+      picNavigationLink.customMenuAppended = true;
+      const picUrl = picNavigationLink.href;
+      const createdByMeUrl = picUrl.replace('person_in_charge', 'created_by');
+      const createdByMeMenuEl = document.createElement('li');
+      const picMenuEl = picNavigationLink.parentElement.parentElement;
+      const firstMenuEl = picMenuEl.parentElement;
+      let currentNextSibling = picMenuEl.nextSibling;
+      firstMenuEl.insertBefore(createdByMeMenuEl, currentNextSibling);
+      createdByMeMenuEl.innerHTML = '<span><a class="custom-menu pmpui-side-navigation__link" href="' + createdByMeUrl + '"><span>自分が作成者の記事#</span></a></span>';
+      currentNextSibling = createdByMeMenuEl.nextSibling;
+
+      const baseSearchUrl = picUrl.split('?').shift();
+
+      // カル・スポ以外
+      const exceptCulSpoUrl = baseSearchUrl + '?filter=%7B%22article_type%22%3A%22ntv_article_news%22%2C%22tags.272c1139a6ec4c198e0349e830b2e999%22%3A%22%E5%9B%BD%E9%9A%9B%2C%E7%B5%8C%E6%B8%88%2C%E3%83%A9%E3%82%A4%E3%83%95%2C%E6%94%BF%E6%B2%BB%2C%E7%A4%BE%E4%BC%9A%22%7D';
+      const exceptCulSpoMenuEl = document.createElement('li');
+      firstMenuEl.insertBefore(exceptCulSpoMenuEl, currentNextSibling);
+      exceptCulSpoMenuEl.innerHTML = '<span><a class="custom-menu pmpui-side-navigation__link" href="' + exceptCulSpoUrl + '"><span>カル・スポ除く#</span></a></span>';
+      currentNextSibling = exceptCulSpoMenuEl.nextSibling;
+
+      // カルチャー
+      const culUrl = baseSearchUrl + '?filter=%7B%22article_type%22%3A%22ntv_article_news%22%2C%22tags.272c1139a6ec4c198e0349e830b2e999%22%3A%22%E3%82%AB%E3%83%AB%E3%83%81%E3%83%A3%E3%83%BC%22%7D';
+      const culMenuEl = document.createElement('li');
+      firstMenuEl.insertBefore(culMenuEl, currentNextSibling);
+      culMenuEl.innerHTML = '<span><a class="custom-menu pmpui-side-navigation__link" href="' + culUrl + '"><span>カルチャー#</span></a></span>';
+      currentNextSibling = culMenuEl.nextSibling;
+
+      // スポーツ
+      const spoUrl = baseSearchUrl + '?filter=%7B%22article_type%22%3A%22ntv_article_news%22%2C%22tags.272c1139a6ec4c198e0349e830b2e999%22%3A%22%E3%82%B9%E3%83%9D%E3%83%BC%E3%83%84%22%7D';
+      const spoMenuEl = document.createElement('li');
+      firstMenuEl.insertBefore(spoMenuEl, currentNextSibling);
+      spoMenuEl.innerHTML = '<span><a class="custom-menu pmpui-side-navigation__link" href="' + spoUrl + '"><span>スポーツ#</span></a></span>';
+      currentNextSibling = spoMenuEl.nextSibling;
+
+      // 報道原稿
+      const manuscriptNavigationLink = document.querySelector('.pmpui-side-navigation__list a[href*=manuscripts]');
+      const newsroomManuscriptUrl = manuscriptNavigationLink.href.split('?').shift() + '?filter=%7B%22category%22%3A%22DV00000001_FE00000003%2CDV00000001_FE00000002%2CDV00000001_FE00000004%2CDV00000001_FE00000005%2CDV00000001_FE20000010%2CDV00000001_FE00000007%2CDV00000001_FE20000007%2CDV00000001_FE00000011%2CDV00000001_FE00000006%22%7D';
+      const manuscriptMenuEl = manuscriptNavigationLink.parentElement.parentElement;
+      const assetMenuEl = manuscriptMenuEl.parentElement;
+      const newsroomManuscriptMenuEl = manuscriptMenuEl.cloneNode(true);
+      const newsroomManuscriptNavigationLink = newsroomManuscriptMenuEl.querySelector('a');
+      newsroomManuscriptNavigationLink.href = newsroomManuscriptUrl;
+      newsroomManuscriptNavigationLink.classList.add('custom-menu');
+      newsroomManuscriptNavigationLink.querySelector('span').innerText = '報道原稿#';
+      assetMenuEl.insertBefore(newsroomManuscriptMenuEl, manuscriptMenuEl.nextSibling);
+
+      // 報道原稿(ニュース編集除く)
+      const newsroomManuscriptUrl2 = manuscriptNavigationLink.href.split('?').shift() + '?filter=%7B%22category%22%3A%22DV00000001_FE00000003%2CDV00000001_FE00000002%2CDV00000001_FE00000004%2CDV00000001_FE00000005%2CDV00000001_FE20000010%2CDV00000001_FE00000007%2CDV00000001_FE20000007%2CDV00000001_FE00000011%22%7D';
+      const newsroomManuscriptMenuEl2 = manuscriptMenuEl.cloneNode(true);
+      const newsroomManuscriptNavigationLink2 = newsroomManuscriptMenuEl2.querySelector('a');
+      newsroomManuscriptNavigationLink2.href = newsroomManuscriptUrl2;
+      newsroomManuscriptNavigationLink2.classList.add('custom-menu');
+      newsroomManuscriptNavigationLink2.querySelector('span').innerText = '報道原稿(ニュース編集除く)#';
+      newsroomManuscriptNavigationLink2.style.fontSize = '0.8em';
+      assetMenuEl.insertBefore(newsroomManuscriptMenuEl2, newsroomManuscriptMenuEl.nextSibling);
+
+      // 災害･L字原稿
+      const disasterManuscriptUrl = manuscriptNavigationLink.href.split('?').shift() + '?filter=%7B%22category%22%3A%22DV00000001_FE00000002%2CDV00000001_FE00000003%2CDV00000001_FE00000004%22%2C%22type%22%3A%223%22%7D';
+      const disasterManuscriptMenuEl = manuscriptMenuEl.cloneNode(true);
+      const disasterManuscriptNavigationLink = disasterManuscriptMenuEl.querySelector('a');
+      disasterManuscriptNavigationLink.href = disasterManuscriptUrl;
+      disasterManuscriptNavigationLink.classList.add('custom-menu');
+      disasterManuscriptNavigationLink.querySelector('span').innerText = '災害･L字原稿#';
+      assetMenuEl.insertBefore(disasterManuscriptMenuEl, newsroomManuscriptMenuEl2.nextSibling);
+    }
+
+    // カスタムメニューの active 制御
+    document.querySelectorAll('.custom-menu').forEach(function(el) {
+      if (location.href === el.href) {
+        el.classList.add('active');
+      } else {
+        el.classList.remove('active');
+      }
+    });
+
     if (location.href.indexOf('/typeline/article/creation/NoTemplate') > -1) {
       //location.href = location.href.replace('/NoTemplate', ''); // テンプレート未指定の記事作成を封じる→無効とする
     }
