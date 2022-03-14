@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.5
+// @version      0.1.6
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -23,7 +23,7 @@
 ・スポーツ
 ▼原稿
 ・報道原稿
-・報道原稿(ﾆｭｰｽ編集除く)
+・報道原稿(ニュース編集除く)
 ・災害･L字原稿
 
 [記事一覧]
@@ -145,12 +145,26 @@ header.pmpui-top_nav {
     if (location.href.indexOf('/typeline/manuscripts/') > -1) {
       // ポップアップ表示中か否かでクリックすべき「記事化」ボタンが異なる
       // ポップアップ中の「記事化」ボタンを優先処理
+
+      // 「NC原稿」「使用不可」の場合に記事化確認ダイアログ表示
+      const unusable = document.querySelector('.pmpui-panel-body').innerText.indexOf('使用不可') > -1;
+      const nc = document.querySelector('.pmpui-content__title').innerText.indexOf('NC:') === 0;
+      let alertText = '';
+      if (unusable) {
+        alertText = '「使用不可」の原稿ですが記事化してよろしいですか？';
+      } else if (nc) {
+        alertText = '「NC:」の原稿ですが記事化してよろしいですか？';
+      }
+
       let buttons = document.querySelectorAll('.MuiDialog-container button');
       if (buttons.length === 0) {
         buttons = document.querySelectorAll('button');
       }
       for (let i = 0; i < buttons.length; i++) {
         if (buttons[i].innerText === '記事化') {
+          if (alertText !== '' && !confirm(alertText)) {
+            return true;
+          }
           buttons[i].click();
           return true;
         }
