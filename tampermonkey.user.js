@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.9
+// @version      0.1.10
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -572,7 +572,13 @@ header.pmpui-top_nav {
             alertBtn.addEventListener('click', function(ev) {
               sidebarLi[i].querySelector('button').click();
             });
-            document.querySelector('.pmpui-form__actions .pmpui-util-action-stripe-group').appendChild(alertBtn);
+
+            let alertBtnContainer = document.querySelector('.pmpui-form__actions .pmpui-util-action-stripe-group');
+            if (alertBtnContainer === null) {
+              alertBtnContainer = document.querySelector('.pmpui-content__actions .pmpui-util-action-stripe-group');
+            }
+            alertBtnContainer.appendChild(alertBtn);
+
             sidebarLi[i].alertInjected = true;
             break;
           }
