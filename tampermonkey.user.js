@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.8
+// @version      0.1.9
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -11,6 +11,8 @@
 // @grant        none
 // ==/UserScript==
 /**
+※過去の安定版への切り戻しバージョンです
+
 【機能一覧】
 ・非本番環境（TYPELINEステージング環境、プレビューサイト）で外観を変更
 ・横スクロールが必要な表が表示された状態で、Ctrl + (← or →) で端まで移動
@@ -39,7 +41,7 @@
 ・アセット選択画面での備考全体の確認のため、備考欄をCtrl+クリックで備考表示モーダルを表示、モーダルをCtrl+クリックで閉じる
 ・アセット選択画面で、行のどこかをダブルクリックすれば設定前確認画面（選んで「保存するボタン」を押したのと同じ状態）に
 ・アセット設定前確認ポップアップでCtrl+Enter or 画面のどこかをダブルクリックで「設定する」をクリックと等価に(アセット設定）
-・公開期限設定の便利ボタンを追加（オリジナルのボタンを除去）
+・公開期限設定の便利ボタンを追加
 ・配信先の「すべてに配信」を除去
 
 [記事詳細=中間画面]
@@ -491,7 +493,6 @@ header.pmpui-top_nav {
       document.querySelectorAll('.publish-period-form').forEach(function(el) {
         if (el.injectButton !== true) {
           el.injectButton = true;
-          el.querySelector('button.pmpui-button').parentNode.remove(); // オフィシャルのボタンを削除
           ['１週間', '１ヵ月', '１年', '年末'].forEach(function(x) {
             const btn = document.createElement('button');
             btn.innerText = x;
@@ -571,11 +572,7 @@ header.pmpui-top_nav {
             alertBtn.addEventListener('click', function(ev) {
               sidebarLi[i].querySelector('button').click();
             });
-            let alertBtnContainer = document.querySelector('.pmpui-form__actions .pmpui-util-action-stripe-group');
-            if (alertBtnContainer === null) {
-              alertBtnContainer = document.querySelector('.pmpui-content__actions .pmpui-util-action-stripe-group');
-            }
-            alertBtnContainer.appendChild(alertBtn);
+            document.querySelector('.pmpui-form__actions .pmpui-util-action-stripe-group').appendChild(alertBtn);
             sidebarLi[i].alertInjected = true;
             break;
           }
