@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.10
+// @version      0.1.12
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -11,8 +11,6 @@
 // @grant        none
 // ==/UserScript==
 /**
-※過去の安定版への切り戻しバージョンです
-
 【機能一覧】
 ・非本番環境（TYPELINEステージング環境、プレビューサイト）で外観を変更
 ・横スクロールが必要な表が表示された状態で、Ctrl + (← or →) で端まで移動
@@ -41,7 +39,6 @@
 ・アセット選択画面での備考全体の確認のため、備考欄をCtrl+クリックで備考表示モーダルを表示、モーダルをCtrl+クリックで閉じる
 ・アセット選択画面で、行のどこかをダブルクリックすれば設定前確認画面（選んで「保存するボタン」を押したのと同じ状態）に
 ・アセット設定前確認ポップアップでCtrl+Enter or 画面のどこかをダブルクリックで「設定する」をクリックと等価に(アセット設定）
-・公開期限設定の便利ボタンを追加
 ・配信先の「すべてに配信」を除去
 
 [記事詳細=中間画面]
@@ -490,42 +487,6 @@ header.pmpui-top_nav {
       });
 
       // 入力補助コントロール
-      document.querySelectorAll('.publish-period-form').forEach(function(el) {
-        if (el.injectButton !== true) {
-          el.injectButton = true;
-          ['１週間', '１ヵ月', '１年', '年末'].forEach(function(x) {
-            const btn = document.createElement('button');
-            btn.innerText = x;
-            btn.classList.add('pmpui-button');
-            btn.classList.add('pmpui-button-size-small');
-            btn.addEventListener('click', function(ev) {
-              let dateTo = new Date();
-              if (ev.target.innerText === '１週間') {
-                dateTo.setDate(dateTo.getDate() + 7);
-              } else if (ev.target.innerText === '１ヵ月') {
-                dateTo.setMonth(dateTo.getMonth() + 1);
-              } else if (ev.target.innerText === '１年') {
-                dateTo.setFullYear(dateTo.getFullYear() + 1);
-              } else {
-                dateTo.setMonth(11);
-                dateTo.setDate(31);
-              }
-              let tmpDateTo = dateTo.toLocaleString().split(' ')[0].split('/');
-              let strDateTo = tmpDateTo[0] + '/' + ('0' + tmpDateTo[1]).slice(-2) + '/' + ('0' + tmpDateTo[2]).slice(-2);
-              document.execCommand('copy');
-              navigator.clipboard.writeText(strDateTo).then(function() {
-                document.querySelectorAll('.pmpui-date-picker input')[1].select();
-              });
-            });
-            el.appendChild(btn);
-          });
-          let lbl = document.createElement('label');
-          lbl.style.fontSize = '0.8em';
-          lbl.innerText = '※ボタンをClickで日付がクリップボードに入るのでCtrl+vでPasteしてください';
-          el.appendChild(lbl);
-        }
-      });
-
       document.querySelectorAll('button').forEach(function(el) {
         if (el.textContent === 'アップロード') {
           if (el.parentNode.parentNode.innerText.indexOf('メディア') === 0) {
