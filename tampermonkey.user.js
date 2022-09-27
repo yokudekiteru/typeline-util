@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.12
+// @version      0.1.13
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -133,7 +133,7 @@ td.tlutil-note {
   if (location.host !== 'dashboard.media.play.jp') {
     const testStyleEl = document.createElement('style');
     testStyleEl.appendChild(document.createTextNode(`
-header.pmpui-top_nav {
+header.pmpui-top_nav,header.pmpui-global-header {
   background-color: darkviolet;
 }
 `));
