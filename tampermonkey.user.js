@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.1.13
+// @version      0.2
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -350,15 +350,17 @@ header.pmpui-top_nav,header.pmpui-global-header {
 
   let articleCustomMenuList = [];
   let manuscriptCustomMenuList = [];
+  let assetCustomMenuList = [];
 
   var observer = new MutationObserver(function() {
 
-    const picNavigationLink = document.querySelector('.pmpui-side-navigation__list a[href*=person_in_charge]');
+    const picNavigationLink = document.querySelector('.pmpui-action-list a[href*=person_in_charge]');
     if (picNavigationLink !== null && articleCustomMenuList.length === 0) {
+      console.log('記事カスタムメニュー構築開始');
       const picUrl = picNavigationLink.href;
       const createdByMeUrl = picUrl.replace('person_in_charge', 'created_by');
       const baseSearchUrl = picUrl.split('?').shift();
-      const prototypeMenuEl = picNavigationLink.parentElement.parentElement.cloneNode(true);
+      const prototypeMenuEl = picNavigationLink.parentElement;
       [
         {
           name: '自分が作成者の記事',
@@ -386,18 +388,27 @@ header.pmpui-top_nav,header.pmpui-global-header {
         myLinkEl.href = x.url;
         myLinkEl.classList.add('custom-menu');
         myLinkEl.classList.add('custom-menu-article');
-        myLinkEl.innerText = x.name + '#';
+        myLinkEl.querySelector('span').innerText = x.name + '#';
         x.style.forEach(function(y) {
           myLinkEl.style[y.key] = y.value;
         });
         articleCustomMenuList.push(myEl);
       });
+      console.log('記事カスタムメニュー構築終了');
     }
 
-    const manuscriptNavigationLink = document.querySelector('.pmpui-side-navigation__list a[href$=manuscripts]');
+    if (picNavigationLink !== null && document.querySelectorAll('.custom-menu-article').length === 0) {
+      const targetEl = picNavigationLink.parentElement.parentElement;
+      const markerEl = targetEl.querySelectorAll('.pmpui-action-list-section-divider')[0];
+      if (targetEl.innerHTML.indexOf('メニューに戻る') === -1) { // 記事種別サブメニューに入ったときはスルー
+        articleCustomMenuList.forEach(function(el) { targetEl.insertBefore(el, markerEl) });
+      }
+    }
+
+    const manuscriptNavigationLink = document.querySelector('.pmpui-action-list a[href$=manuscripts]');
     if (manuscriptNavigationLink !== null && manuscriptCustomMenuList.length === 0) {
       const baseSearchUrl = manuscriptNavigationLink.href.split('?').shift();
-      const prototypeMenuEl = manuscriptNavigationLink.parentElement.parentElement.cloneNode(true);
+      const prototypeMenuEl = manuscriptNavigationLink.parentElement;
       [
         {
           name: '報道原稿',
@@ -414,12 +425,13 @@ header.pmpui-top_nav,header.pmpui-global-header {
           url: baseSearchUrl + '?filter=%7B%22category%22%3A%22DV00000001_FE00000002%2CDV00000001_FE00000003%2CDV00000001_FE00000004%22%2C%22type%22%3A%223%22%7D',
           style: [],
         },
-      ].forEach(function(x) {
+      ].reverse().forEach(function(x) {
         const myEl = prototypeMenuEl.cloneNode(true);
         const myLinkEl = myEl.querySelector('a');
         myLinkEl.href = x.url;
         myLinkEl.classList.add('custom-menu');
         myLinkEl.classList.add('custom-menu-manuscript');
+        myLinkEl.querySelector('span').remove();
         myLinkEl.querySelector('span').innerText = x.name + '#';
         x.style.forEach(function(y) {
           myLinkEl.style[y.key] = y.value;
@@ -428,27 +440,57 @@ header.pmpui-top_nav,header.pmpui-global-header {
       });
     }
 
-    if (picNavigationLink !== null && document.querySelectorAll('.custom-menu-article').length === 0) {
-      const targetEl = picNavigationLink.parentElement.parentElement.parentElement;
-      if (targetEl.innerHTML.indexOf('メニューに戻る') === -1) { // 記事種別サブメニューに入ったときはスルー
-        articleCustomMenuList.forEach(function(el) { targetEl.appendChild(el); });
-      }
-    }
-
     if (manuscriptNavigationLink !== null && document.querySelectorAll('.custom-menu-manuscript').length === 0) {
-      const targetEl = manuscriptNavigationLink.parentElement.parentElement.parentElement;
-      manuscriptCustomMenuList.forEach(function(el) { targetEl.appendChild(el); });
+      const targetEl = manuscriptNavigationLink.parentElement.parentElement;
+      manuscriptCustomMenuList.forEach(function(el) { targetEl.insertBefore(el, manuscriptNavigationLink.parentNode.nextSibling); });
     }
 
-    // 素材管理メニューを閉じる動作に対応(#メニューの並び順が変わってしまう既知の不具合あり)
-    document.querySelectorAll('.custom-menu-manuscript').forEach(function(el) { el.style.display = manuscriptNavigationLink === null ? 'none' : 'inherit'; });
+    const assetNavigationLink = document.querySelector('.pmpui-action-list a[href$=assets]');
+    if (assetNavigationLink !== null && assetCustomMenuList.length === 0) {
+      const baseSearchUrl = assetNavigationLink.href.split('?').shift();
+      const prototypeMenuEl = assetNavigationLink.parentElement;
+      [
+        {
+          name: '動画･画像',
+          url: baseSearchUrl + '?filter=%7B"type"%3A"movie%2Cimage"%7D',
+          style: [],
+        },
+        {
+          name: '動画のみ',
+          url: baseSearchUrl + '?filter=%7B"type"%3A"movie"%7D',
+          style: [{key: 'fontSize', value: '0.9em'}],
+        },
+        {
+          name: '画像のみ',
+          url: baseSearchUrl + '?filter=%7B"type"%3A"image"%7D',
+          style: [],
+        },
+      ].reverse().forEach(function(x) {
+        const myEl = prototypeMenuEl.cloneNode(true);
+        const myLinkEl = myEl.querySelector('a');
+        myLinkEl.href = x.url;
+        myLinkEl.classList.add('custom-menu');
+        myLinkEl.classList.add('custom-menu-asset');
+        myLinkEl.querySelector('span').remove();
+        myLinkEl.querySelector('span').innerText = x.name + '#';
+        x.style.forEach(function(y) {
+          myLinkEl.style[y.key] = y.value;
+        });
+        assetCustomMenuList.push(myEl);
+      });
+    }
+
+    if (assetNavigationLink !== null && document.querySelectorAll('.custom-menu-asset').length === 0) {
+      const targetEl = assetNavigationLink.parentElement.parentElement;
+      assetCustomMenuList.forEach(function(el) { targetEl.insertBefore(el, assetNavigationLink.parentNode.nextSibling); });
+    }
 
     // カスタムメニューの active 制御
     document.querySelectorAll('.custom-menu').forEach(function(el) {
       if (location.href === el.href) {
-        el.classList.add('active');
+        el.parentNode.classList.add('pmpui-action-list-item-active');
       } else {
-        el.classList.remove('active');
+        el.parentNode.classList.remove('pmpui-action-list-item-active');
       }
     });
 
