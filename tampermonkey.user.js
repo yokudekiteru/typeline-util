@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.2.1
+// @version      0.2.2
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -34,7 +34,7 @@
 ・テキスト入力欄のフォントを MS Gothic に（等幅かつクオーテーションの向き判別可能）
 ・タイトル、サブタイトル、要約の入力欄を強調
 ・配信先確認を促すボタンの設置、配信先タブを強調（新規作成時と原稿から記事化した直後タイトル未定時に）
-・記事作成ページから動画のアップロードボタンを消し去る
+・記事作成ページから動画のアップロードボタンを消し去る（一部環境のみ）
 ・アセット選択画面(画像・動画どちらも)備考欄の表示領域を限定し、備考文字数が多くなっても表を見やすく
 ・アセット選択画面での備考全体の確認のため、備考欄をCtrl+クリックで備考表示モーダルを表示、モーダルをCtrl+クリックで閉じる
 ・アセット選択画面で、行のどこかをダブルクリックすれば設定前確認画面（選んで「保存するボタン」を押したのと同じ状態）に
@@ -59,7 +59,7 @@
 ・備考全体の確認のため、備考欄をCtrl+クリックで備考表示モーダルを表示、モーダルをCtrl+クリックで閉じる
 
 [アセットアップロード]
-・動画ファイルをアップロードできないように
+・動画ファイルをアップロードできないように（一部環境のみ）
 */
 (function() {
   'use strict';
@@ -530,7 +530,7 @@ header.pmpui-top_nav,header.pmpui-global-header,.pmpui-global-menu {
 
       // 入力補助コントロール
       document.querySelectorAll('button').forEach(function(el) {
-        if (el.textContent === 'アップロード') {
+        if (location.pathname.indexOf('/projects/203ac072') === 0 && el.textContent === 'アップロード') {
           if (el.parentNode.parentNode.innerText.indexOf('メディア') === 0) {
             el.style = 'visibility: hidden;';
           }
@@ -601,7 +601,7 @@ header.pmpui-top_nav,header.pmpui-global-header,.pmpui-global-menu {
       adjustAssetListView();
       // アップロードを画像のみに限定
       const imageUploadEl = document.querySelector('input[type="file"]');
-      if (imageUploadEl !== null) {
+      if (location.pathname.indexOf('/projects/203ac072') === 0 && imageUploadEl !== null) {
         imageUploadEl.accept = 'image/jpeg,image/png';
       }
     } else if (location.href.indexOf('/typeline/manuscripts') > -1) {
