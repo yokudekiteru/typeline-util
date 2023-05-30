@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TYPELINE Util
 // @namespace    http://tampermonkey.net/
-// @version      0.2.2
+// @version      0.2.3
 // @description  TYPELINEの挙動を変えるためのスクリプト
 // @author       ogw.tttt@gmail.com
 // @include      https://preview.n*v.co.jp/*
@@ -21,7 +21,7 @@
 ・カル・スポ除く
 ・カルチャー
 ・スポーツ
-▼原稿
+▼原稿（一部環境のみ）
 ・報道原稿
 ・報道原稿(ニュース編集除く)
 ・災害･L字原稿
@@ -406,7 +406,7 @@ header.pmpui-top_nav,header.pmpui-global-header,.pmpui-global-menu {
     }
 
     const manuscriptNavigationLink = document.querySelector('.pmpui-action-list a[href$=manuscripts]');
-    if (manuscriptNavigationLink !== null && manuscriptCustomMenuList.length === 0) {
+    if (location.pathname.indexOf('/projects/203ac072') === 0 && manuscriptNavigationLink !== null && manuscriptCustomMenuList.length === 0) {
       const baseSearchUrl = manuscriptNavigationLink.href.split('?').shift();
       const prototypeMenuEl = manuscriptNavigationLink.parentElement;
       [
